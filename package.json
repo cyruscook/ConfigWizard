@@ -1,0 +1,22 @@
+{
+  "name": "configwizard",
+  "version": "1.0.0",
+  "description": "A program to backup and transport your game configs/settings",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyruscook/ConfigWizard.git"
+  },
+  "author": "Cyrus Massey-Cook",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/cyruscook/ConfigWizard/issues"
+  },
+  "homepage": "https://github.com/cyruscook/ConfigWizard#readme",
+  "devDependencies": {
+    "electron": "^4.0.8"
+  }
+}
