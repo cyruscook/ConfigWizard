@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Config Wizard</title>
+
+	<base href="./">
+
+	<link rel="stylesheet" href="css/bootstrap.min.css" />
+	<link rel="stylesheet" href="css/index.css" />
+</head>
+<body>
+	<div class="container">
+
+		<h1>Hello!</h1>
+
+		<h3>
+			Your games:
+		</h3>
+		<table class="table table-bordered table-striped">
+			<thead>
+				<th>
+					Game
+				</th>
+				<td>
+					Location
+				</td>
+			</thead>
+			<tbody id="GamesTableBody">
+
+			</tbody>
+		</table>
+
+		<div class="row">
+			<!-- File input -->
+			<div class="file-loading" id="fileUploadContainer">
+				<input type="file" class="form-control" id="fileUploadInput" multiple />
+			</div>
+		</div>
+
+	</div>
+
+	<footer>
+		Config Wizard v1.0.0, Node v
+		<script>document.write(process.versions.node)</script>, Chrome v
+		<script>document.write(process.versions.chrome)</script>, and Electron v
+		<script>document.write(process.versions.electron)</script>
+	</footer>
+
+	<script>
+		document.addEventListener("keydown", function (e)
+		{
+			if (e.which === 116)
+			{
+				location.reload();
+			}
+		});
+	</script>
+</body>
+</html>
