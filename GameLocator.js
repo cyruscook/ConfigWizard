@@ -92,30 +92,37 @@ class GameLocator
 
 		/* ---- Now we have the steam libraries, retrieve the games in them! ---- */
 
+		// For each steam library
 		for (x in steamLibraries)
 		{
+			// Get each file within it
 			fs.readdir(path.normalize(steamLibraries + "\steamapps\\"), (err, files) =>
 			{
 				for(x in file)
 				{
-					fs.readFile(path.normalize(steamLibraries + "\steamapps\\" + file), (err, data) =>
+					// If it is a file listing a game (-----_730.adf)
+					if(file.substr())
 					{
-						if (err) throw err;
-
-						// Parse the adf format into json (adf == vdf)
-						json = vdf.stringify(vdf.parse(data));
-
-						// Loop through every key in the json
-						for (x in json)
+						// Read the file
+						fs.readFile(path.normalize(steamLibraries + "\steamapps\\" + file), (err, data) =>
 						{
-							if (!isNaN(x))
+							if (err) throw err;
+							
+							// Parse the adf format into json (adf == vdf)
+							json = vdf.stringify(vdf.parse(data));
+							
+							// Loop through every key in the json
+							for (x in json)
 							{
 								// If it is a number (the number representing which library it is)
-								// Add it's value to the array!
-								steamLibraries.push(json[x]);
+								if (!isNaN(x))
+								{
+									// Add it's value to the array!
+									steamLibraries.push(json[x]);
+								}
 							}
-						}
-					});
+						});
+					}
 				}
 			});
 		}
