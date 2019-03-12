@@ -59,6 +59,7 @@ class GameLocator
 		if (steamInstallDir = "")
 		{
 			// If, as far as we know, steam is not installed, then return the 0 games that were found
+			throw new Error("No steam installation directories found!");
 			return [];
 		}
 
@@ -66,13 +67,57 @@ class GameLocator
 
 		var steamLibraries = [];
 
+		// The actual steam install dir is also a library!
+		steamLibraries.push(steamInstallDir)
+
 		// Read steamapps/libraryfolders.vdf
-		fs.readFile(steamInstallDir + "\steamapps\libraryfolders.vdf", (err, data) =>
+		fs.readFile(path.normalize(steamInstallDir + "\steamapps\libraryfolders.vdf"), (err, data) =>
 		{
 			if (err) throw err;
-			console.log(data);
+
+			// Parse the vdf format into json
 			json = vdf.stringify(vdf.parse(data));
-			vdf_text = data);
+
+			// Loop through every key in the json
+			for (x in json)
+			{
+				if (!isNaN(x))
+				{
+					// If it is a number (the number representing which library it is)
+					// Add it's value to the array!
+					steamLibraries.push(json[x]);
+				}
+			}
 		});
+
+		/* ---- Now we have the steam libraries, retrieve the games in them! ---- */
+
+		for (x in steamLibraries)
+		{
+			fs.readdir(path.normalize(steamLibraries + "\steamapps\\"), (err, files) =>
+			{
+				for(x in file)
+				{
+					fs.readFile(path.normalize(steamLibraries + "\steamapps\\" + file), (err, data) =>
+					{
+						if (err) throw err;
+
+						// Parse the adf format into json (adf == vdf)
+						json = vdf.stringify(vdf.parse(data));
+
+						// Loop through every key in the json
+						for (x in json)
+						{
+							if (!isNaN(x))
+							{
+								// If it is a number (the number representing which library it is)
+								// Add it's value to the array!
+								steamLibraries.push(json[x]);
+							}
+						}
+					});
+				}
+			});
+		}
 	}
 }
