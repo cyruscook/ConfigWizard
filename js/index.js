@@ -81,7 +81,7 @@ function jsonToTable(json, table)
 				tabCell.addEventListener("dblclick", function ()
 				{
 					console.log("HI   " + this.innerHTML);
-					shell.showItemInFolder(this.innerHTML);
+					shell.openItem(this.innerHTML);
 				});
 				tabCell.style.cursor = "pointer";
 				tabCell.title = "Double Click to Open";
