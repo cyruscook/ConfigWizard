@@ -23,28 +23,8 @@ class Game
 	}
 }
 
-class SteamGame
-{
-	constructor(manifest, installDir)
-	{
-		this.appid = manifest.appid;
-		this.name = manifest.name;
-		this.installDir = path.normalize(installDir);
-		this.lastOwner = manifest.lastOwner;
-
-		this.__manifest = manifest;
-	}
-
-	__idToPersona()
-	{
-		var id = this.lastOwner;
-
-		var usersDir = path.normalize(this.installDir.substr(this.__manifest.installDir.length + "\steamapps\common\\".length));
-	}
-}
-
 // Get all the games on the users computer
-getAllGames()
+function getAllGames()
 {
 	var games = [];
 
@@ -54,69 +34,70 @@ getAllGames()
 	return games;
 }
 
-// Get all games installed through steam on the users computer
-getSteamGames(onFinish)
+
+function getSteamInstallDir(callback)
 {
-	function getSteamInstallDir(callback)
+	/* ---- Get the directory that steam is installed in ---- */
+	const steamRegAddress32 = "HKLM\\SOFTWARE\\Valve\\Steam";
+	const steamRegAddress64 = "HKLM\\SOFTWARE\\Wow6432Node\\Valve\\Steam";
+
+	var steamInstallDir = "";
+	// Fetch the steam install dir
+
+	// First try the location on 32bit machines
+	regedit.list([steamRegAddress32], function (err, result)
 	{
-		/* ---- Get the directory that steam is installed in ---- */
-		const steamRegAddress32 = "HKLM\\SOFTWARE\\Valve\\Steam";
-		const steamRegAddress64 = "HKLM\\SOFTWARE\\Wow6432Node\\Valve\\Steam";
-
-		var steamInstallDir = "";
-		// Fetch the steam install dir
-
-		// First try the location on 32bit machines
-		regedit.list([steamRegAddress32], function (err, result)
+		try
 		{
+			if (err)
+			{
+				throw err;
+			}
+			else if (result[steamRegAddress32].values.InstallPath.value)
+			{
+				// If we got a result from the 32bit address
+				// Set this is the install dir
+				steamInstallDir = result[steamRegAddress32].values.InstallPath.value;
+
+				//console.log("Retrieved steam's install dir: " + steamInstallDir);
+				callback(steamInstallDir);
+			}
+		}
+		catch (e)
+		{
+			console.log("Could not find steam's 32bit regedit address, trying the 64 bit address");
+
 			try
 			{
-				if (err)
+				// If we didn't get a result at the 32bit address, let's try the 64 bit address
+				regedit.list([steamRegAddress64], function (err, result)
 				{
-					throw err;
-				}
-				else if (result[steamRegAddress32].values.InstallPath.value)
-				{
-					// If we got a result from the 32bit address
-					// Set this is the install dir
-					steamInstallDir = result[steamRegAddress32].values.InstallPath.value;
+					if (err)
+					{
+						throw err;
+					}
+					else if (result[steamRegAddress64].values.InstallPath.value)
+					{
+						// If we got a result from the 64bit address
+						// Set this is the install dir
+						steamInstallDir = path.normalize(result[steamRegAddress64].values.InstallPath.value);
 
-					//console.log("Retrieved steam's install dir: " + steamInstallDir);
-					callback(steamInstallDir);
-				}
+						//console.log("Retrieved steam's install dir: " + steamInstallDir);
+						callback(steamInstallDir);
+					}
+				});
 			}
 			catch (e)
 			{
-				console.log("Could not find steam's 32bit regedit address, trying the 64 bit address");
-
-				try
-				{
-					// If we didn't get a result at the 32bit address, let's try the 64 bit address
-					regedit.list([steamRegAddress64], function (err, result)
-					{
-						if (err)
-						{
-							throw err;
-						}
-						else if (result[steamRegAddress64].values.InstallPath.value)
-						{
-							// If we got a result from the 64bit address
-							// Set this is the install dir
-							steamInstallDir = result[steamRegAddress64].values.InstallPath.value;
-
-							//console.log("Retrieved steam's install dir: " + steamInstallDir);
-							callback(steamInstallDir);
-						}
-					});
-				}
-				catch (e)
-				{
-					console.log("Could not find steam's 64 bit regedit address either! Assuming steam is not installed.");
-				}
+				console.log("Could not find steam's 64 bit regedit address either! Assuming steam is not installed.");
 			}
-		});
-	}
-		
+		}
+	});
+}
+
+// Get all games installed through steam on the users computer
+function getSteamGames(onFinish)
+{
 	function getSteamLibraries(steamInstallDir, callback)
 	{
 
@@ -174,7 +155,7 @@ getSteamGames(onFinish)
 					var json = vdf.parse(data);
 
 					// Add it's value to the array!
-					var thisGame = new Game(json.AppState.name, path.normalize(steamLibraries[x] + "\\steamapps\\common\\" + json.AppState.installdir), void, json.AppState.appid);
+					var thisGame = new Game(json.AppState.name, path.normalize(steamLibraries[x] + "\\steamapps\\common\\" + json.AppState.installdir), undefined, json.AppState.appid);
 						
 					steamGames.push(thisGame);
 				}
@@ -209,3 +190,29 @@ getSteamGames(onFinish)
 		}
 	});
 }
+
+function getSteamConfigDir(game, userID, callback)
+{
+	var id = game.lastOwner;
+
+	getSteamInstallDir(function (dir)
+	{
+		var configDir = path.normalize(dir + "\\userdata\\" + userID + "\\" + game.appID);
+		callback(configDir);
+	});
+}
+
+getSteamGames(function (games)
+{
+	for (i in games)
+	{
+		getSteamConfigDir(games[i], "182883226", function (dir)
+		{
+			fs.access(dir, fs.constants.F_OK, function (err)
+			{
+				console.count("not found");
+			});
+			console.count("found");
+		});
+	}
+})
