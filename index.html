@@ -5,8 +5,8 @@
 
 	<base href="./">
 
-	<link rel="stylesheet" href="css/bootstrap.min.css" />
-	<link rel="stylesheet" href="css/index.css" />
+	<link rel="stylesheet" href="./css/bootstrap.min.css" />
+	<link rel="stylesheet" href="./css/index.css" />
 </head>
 <body>
 	<div class="container">
@@ -16,17 +16,13 @@
 		<h3>
 			Your games:
 		</h3>
-		<table class="table table-bordered table-striped">
-			<thead>
-				<th>
-					Game
-				</th>
-				<td>
-					Location
-				</td>
-			</thead>
-			<tbody id="GamesTableBody">
-
+		<table class="table thead-light table-hover table-bordered table-striped" id="foundGamesTbl">
+			<tbody>
+				<tr>
+					<td>
+						Locating your games, please wait...
+					</td>
+				</tr>
 			</tbody>
 		</table>
 
@@ -55,5 +51,6 @@
 			}
 		});
 	</script>
+	<script src="./js/index.js"></script>
 </body>
 </html>

@@ -36,6 +36,8 @@ function createWindow()
 
 	mainWindow.toggleDevTools();
 
+	mainWindow.maximize();
+
 	mainWindow.on("ready-to-show", () =>
 	{
 		mainWindow.show();
