@@ -1,13 +1,31 @@
-// Converts camel case to regular case (Thank you https://stackoverflow.com/a/4149393/7641587);
+const { shell } = require('electron');
+
+
+// Converts camel case to regular case
 function fromCamelCase(str)
 {
-	// insert a space before all caps
-	str = str.replace(/([A-Z])/g, ' $1');
+	var endStr;
+	for (var i = 0; i < str.length; i++)
+	{
+		var char = str.charAt(i);
+		var prevChar = str.charAt(i - 1);
 
-	// uppercase the first character
-	str = str.replace(/^./, function (str) { return str.toUpperCase(); })
+		// If its the first character
+		if (i === 0)
+		{
+			endStr = char.toUpperCase();
+		}
+		// If this char is uppercase
+		else if (char === char.toUpperCase() && prevChar === prevChar.toLowerCase())
+		{
+			endStr += " " + char;
+		} else
+		{
+			endStr += char;
+		}
+	}
 
-	return str;
+	return endStr;
 }
 
 
@@ -57,6 +75,17 @@ function jsonToTable(json, table)
 			{
 				thisCellData = "Not Found";
 			}
+			else if ([2, 3].includes(j))
+			{
+				// Double clicking on a file will open it
+				tabCell.addEventListener("dblclick", function ()
+				{
+					console.log("HI   " + this.innerHTML);
+					shell.showItemInFolder(this.innerHTML);
+				});
+				tabCell.style.cursor = "pointer";
+				tabCell.title = "Double Click to Open";
+			}
 			tabCell.innerHTML = thisCellData;
 		}
 	}
@@ -65,20 +94,8 @@ function jsonToTable(json, table)
 
 const gl = require("./GameLocator.js");
 
-gl.getSteamGames(function (games)
+gl.getAllGames(function (games)
 {
-	gl.getSteamInstallDir(function (dir)
-	{
-		games.forEach(function (item, index)
-		{
-			gl.getSteamConfigDir(item, "182883226", dir, function (game)
-			{
-				games[index] = game;
-				if (index >= games.length - 1)
-				{
-					jsonToTable(games, document.getElementById("foundGamesTbl"));
-				}
-			});
-		});
-	});
+	
+	jsonToTable(games, document.getElementById("foundGamesTbl"));
 });

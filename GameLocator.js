@@ -4,13 +4,50 @@ const electron = require("electron");
 const regedit = require("regedit");
 
 // Allows us to interact with the file system
-const fs = require('fs');
+const fs = require("fs");
 
 // Parse vdf files
-const vdf = require('simple-vdf');
+const vdf = require("simple-vdf");
 
 // Utility for parsing directory paths
-const path = require('path');
+const path = require("path");
+
+// Allows us to get os related file paths like documents directory
+const os = require("os");
+
+// Get directories in a folder (excluding files, thank you https://stackoverflow.com/a/18112359/7641587)
+var fs_getDirs = function (rootDir, cb)
+{
+	fs.readdir(rootDir, function (err, files)
+	{
+		var err2;
+		if (err)
+		{
+			throw err;
+			err2 = err;
+		}
+		var dirs = [];
+		for (var index = 0; index < files.length; ++index)
+		{
+			var file = files[index];
+			if (file[0] !== '.')
+			{
+				var filePath = rootDir + '/' + file;
+				fs.stat(filePath, function (err, stat)
+				{
+					if (stat.isDirectory())
+					{
+						dirs.push(this.file);
+					}
+					if (files.length === (this.index + 1))
+					{
+						return cb(err2, dirs);
+					}
+				}.bind({ index: index, file: file }));
+			}
+		}
+	});
+};
 
 
 class Game
@@ -28,16 +65,50 @@ class Game
 
 // Get all the games on the users computer
 exports.getAllGames = function (callback)
-	{
-		var games = [];
+{
+	var games = [];
 
-		// Get all of the steam games
-		getSteamGames(function (steamGames)
+	var steamReady = false;
+	var documentsReady = false;
+
+	// Get all of the steam games
+	exports.getSteamGames(function (steamGames)
+	{
+		exports.getSteamInstallDir(function (dir)
 		{
-			games = games.concat(steamGames);
-			callback(games);
+			steamGames.forEach(function (item, index)
+			{
+				exports.getSteamConfigDir(item, "182883226", dir, function (game)
+				{
+					steamGames[index] = game;
+
+					if (index >= steamGames.length - 1)
+					{
+						games = games.concat(steamGames);
+
+						steamReady = true;
+						if (steamReady && documentsReady)
+						{
+							callback(games);
+						}
+					}
+				});
+			});
 		});
-	};
+	});
+
+	exports.getDocumentsConfigs(function (documentGames)
+	{
+		games = games.concat(documentGames);
+
+		documentsReady = true;
+		if (steamReady && documentsReady)
+		{
+			console.dir(games);
+			callback(games);
+		}
+	});
+};
 
 exports.getSteamInstallDir = function (callback)
 	{
@@ -110,7 +181,7 @@ exports.getSteamGames = function (onFinish)
 		var steamLibraries = [];
 
 		// The actual steam install dir is also a library!
-		steamLibraries.push(steamInstallDir)
+		steamLibraries.push(steamInstallDir);
 
 		// Read steamapps/libraryfolders.vdf
 		fs.readFile(path.normalize(steamInstallDir + "\\steamapps\\libraryfolders.vdf"), "utf8", function (err, data)
@@ -159,7 +230,8 @@ exports.getSteamGames = function (onFinish)
 					var json = vdf.parse(data);
 
 					// Add it's value to the array!
-					var thisGame = new Game(json.AppState.name, "Steam", path.normalize(steamLibraries[x] + "\\steamapps\\common\\" + json.AppState.installdir), undefined, json.AppState.appid);
+					var thisGame = new Game(json.AppState.name, "Steam", path.normalize(steamLibraries[x] + "\\steamapps\\common\\" + json.AppState.installdir), undefined, "st_" + json.AppState.appid);
+					// ("st_" prefix denotes a steam game)
 
 					steamGames.push(thisGame);
 				}
@@ -197,11 +269,9 @@ exports.getSteamGames = function (onFinish)
 exports.getSteamConfigDir = function (game, userID, installDir, callback)
 {
 	var id = game.lastOwner;
-
-	exports.getSteamInstallDir(function (dir)
-	{
-	var configDir = path.normalize(installDir + "\\userdata\\" + userID + "\\" + game.appID);
-
+	
+	var configDir = path.normalize(installDir + "\\userdata\\" + userID + "\\" + game.appID.substring(3));
+	
 	fs.access(configDir, fs.constants.F_OK, function (err)
 	{
 		if (!err)
@@ -210,5 +280,114 @@ exports.getSteamConfigDir = function (game, userID, installDir, callback)
 		}
 		callback(game);
 	});
+};
+
+// Get the config for games which store it in the documents folder
+exports.getDocumentsConfigs = function (callback)
+{
+	var games = [];
+
+	// If we've retrieved 
+	var AReady = false;
+	var BReady = false;
+
+	// Get the directory of the documents folder
+	var docDir = os.homedir();
+
+
+	// There are two types of these games
+
+	// A, the selfish ones - the ones that store their config file directly in the Documents folder
+	// Here they are, just to shame them (jk, to identify them)
+	const typeA = [
+		"Battlefield 1",
+		"Battlefield 4",
+		"Overwatch",
+		"Rockstar Games" // And all of it's titles (like GTA V, etc). To simplify this I'm not going to get rockstar games individually, I'm just gonna leave them grouped together as they already are
+	];
+	// Let's retrieve all of group A
+	fs_getDirs(docDir + "\\Documents", function (err, files)
+	{
+		if (err) throw err;
+		
+		files.forEach(function (value, index)
+		{
+			// For each folder in the documents directory
+			// If it is a recognized game
+			if (typeA.includes(value))
+			{
+				var platform = undefined;
+
+				// Get the platform
+				switch (value)
+				{
+					case typeA[0]: // BF1
+					case typeA[1]: // BF4
+						platform = "Origin";
+						break;
+					case typeA[2]: // Overwatch
+						platform = "Blizzard";
+						break;
+					case typeA[3]: // Any rockstar game
+						platform = "Rockstar";
+						break;
+				}
+
+
+				// Create a new game object, and prepare it for being returned
+				games.push(new Game(value, platform, undefined,  docDir + "\\Documents\\" + value));
+			}
+
+			if (index >= files.length - 1)
+			{
+				AReady = true;
+				// If we've retrieved A & B callback
+				if (AReady && BReady)
+				{
+					callback(games);
+				}
+			}
+		});
+	});
+
+
+
+	// B, the considerate ones - these put their save game file in the "My Games" folder in your documents
+	const typeB = [
+		"Rainbow Six - Siege"
+	];
+
+	// Let's retrieve all of Group B
+	fs_getDirs(path.normalize(docDir + "\\Documents\\My Games"), function (err, files)
+	{
+		if (err) throw err;
+
+		files.forEach(function (value, index)
+		{
+			// For each folder in the documents directory
+			// If it is a recognized game
+			if (typeB.includes(value))
+			{
+				var platform = undefined;
+
+				// Get the platform
+				switch (value)
+				{
+					case typeB[0]: // R6
+						platform = "Ubisoft";
+						break;
+				}
+
+				// Create a new game object, and prepare it for being returned
+				games.push(new Game(value, platform, undefined, docDir + "\\Documents\\My Games\\" + value));
+
+				BReady = true;
+				// If we've retrieved A & B callback
+				if (AReady && BReady)
+				{
+					callback(games);
+				}
+			}
+		});
 	});
 };

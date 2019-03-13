@@ -40,7 +40,9 @@ function createWindow()
 
 	mainWindow.on("ready-to-show", () =>
 	{
+		mainWindow.maximize();
 		mainWindow.show();
+		mainWindow.focus();
 	});
 
 	// When the window is closed, dereference it
